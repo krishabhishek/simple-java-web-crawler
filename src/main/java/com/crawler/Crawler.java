@@ -53,21 +53,20 @@ public class Crawler {
     }
 
     public List<SiteUrl> crawl(String link) throws InterruptedException, ExecutionException {
-        visitIfNotYetInAThread(link);
+        visitUrlIfNotVisitedBefore(link);
 
         //wait so queue is ready
         Thread.sleep(1000);
 
         while (!queue.isEmpty()) {
             pages.add(queue.poll().get());
-            System.out.println("processed link: " + counter.get());
         }
 
         executor.shutdown();
         return pages;
     }
 
-    private void visitIfNotYetInAThread(String visitUrl) {
+    private void visitUrlIfNotVisitedBefore(String visitUrl) {
         if (visitPageMap.putIfAbsent(visitUrl, "") == null) {
             try {
                 Future<SiteUrl> submit = executor.submit(() -> {
@@ -94,8 +93,7 @@ public class Crawler {
         Elements linksOnSameDomain = doc.select("a[href^=" + domain + "]");
         Elements externalLinks = doc.select("a[href~=^((?!" + domain + ").)*$]");
         SiteUrl page = new SiteUrl(link, linksOnSameDomain, externalLinks, img, scripts, imports);
-        linksOnSameDomain.forEach(element -> visitIfNotYetInAThread(element.attr("abs:href")));
-        System.out.println("Printing the linksOnSameDomain ::"+linksOnSameDomain);
+        linksOnSameDomain.forEach(element -> visitUrlIfNotVisitedBefore(element.attr("abs:href")));
         return page;
     }
 
